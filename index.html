@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Interactive Apple Eater</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background-color: #f3f4f6;
+      margin: 0;
+      padding: 20px;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+    .content-wrapper {
+      background-color: #ffffff;
+      border: 2px solid #d1d5db;
+      border-radius: 16px;
+      padding: 30px;
+      box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 450px;
+      text-align: center;
+    }
+    .apple-container {
+      position: relative;
+      width: 250px;
+      height: 250px;
+      margin: 0 auto 30px auto;
+    }
+    .apple-container img {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      opacity: 0;
+      transition: opacity 0.3s ease-in-out;
+    }
+    .apple-container img.active {
+      opacity: 1;
+    }
+    #slider-container {
+      width: 100%;
+      max-width: 350px;
+      height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto;
+      position: relative;
+    }
+    #slider-bar {
+      width: 100%;
+      height: 12px;
+      background-color: #e5e7eb;
+      border-radius: 6px;
+      position: relative;
+    }
+    #slider-handle {
+      width: 28px;
+      height: 28px;
+      background-color: #ef4444;
+      border-radius: 50%;
+      border: 3px solid white;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      position: absolute;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      cursor: grab;
+      z-index: 10;
+    }
+    #slider-handle:active {
+      cursor: grabbing;
+      background-color: #b91c1c;
+    }
+    #debug-text {
+      margin-top: 20px;
+      font-size: 0.9rem;
+      color: #4b5563;
+    }
+  </style>
+</head>
+<body>
+  <div class="content-wrapper">
+    <div class="apple-container">
+      <img src="images/apple1.png" id="apple0" class="active" alt="Apple Stage 1">
+      <img src="images/apple2.png" id="apple1" alt="Apple Stage 2">
+      <img src="images/apple3.png" id="apple2" alt="Apple Stage 3">
+      <img src="images/apple4.png" id="apple3" alt="Apple Stage 4">
+    </div>
+
+    <div id="slider-container">
+      <div id="slider-bar">
+        <div id="slider-handle"></div>
+      </div>
+    </div>
+    <div id="debug-text">Slider Value: 0%</div>
+  </div>
+
+  <!-- Chomp Sound -->
+  <audio id="chomp-sound" src="sounds/chomp.mp3" preload="auto"></audio>
+
+  <script>
+    const appleImages = [
+      document.getElementById('apple0'),
+      document.getElementById('apple1'),
+      document.getElementById('apple2'),
+      document.getElementById('apple3')
+    ];
+    const sliderBar = document.getElementById('slider-bar');
+    const sliderHandle = document.getElementById('slider-handle');
+    const debugText = document.getElementById('debug-text');
+    const chompSound = document.getElementById('chomp-sound');
+
+    let isDragging = false;
+    let currentIndex = 0;
+
+    function updateApple(value) {
+      const index = Math.min(Math.floor(value / (100 / appleImages.length)), appleImages.length - 1);
+      if (index !== currentIndex) {
+        appleImages[currentIndex].classList.remove('active');
+        appleImages[index].classList.add('active');
+
+        // Play chomp sound immediately on stage change
+        chompSound.pause();
+        chompSound.currentTime = 0;
+        chompSound.play().catch(e => {
+          console.log('Audio play blocked:', e);
+        });
+
+        currentIndex = index;
+      }
+    }
+
+    function setSlider(percent) {
+      sliderHandle.style.left = `${percent}%`;
+      debugText.textContent = `Slider Value: ${Math.round(percent)}%`;
+      updateApple(percent);
+    }
+
+    // Mouse drag events
+    sliderHandle.addEventListener('mousedown', (e) => {
+      isDragging = true;
+      e.preventDefault();
+    });
+    document.addEventListener('mouseup', () => {
+      isDragging = false;
+    });
+    document.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      const rect = sliderBar.getBoundingClientRect();
+      const x = Math.min(Math.max(0, e.clientX - rect.left), rect.width);
+      const percent = (x / rect.width) * 100;
+      setSlider(percent);
+    });
+
+    // Touch events
+    sliderHandle.addEventListener('touchstart', (e) => {
+      isDragging = true;
+      e.preventDefault();
+    });
+    document.addEventListener('touchend', () => {
+      isDragging = false;
+    });
+    document.addEventListener('touchmove', (e) => {
+      if (!isDragging) return;
+      const touch = e.touches[0];
+      const rect = sliderBar.getBoundingClientRect();
+      const x = Math.min(Math.max(0, touch.clientX - rect.left), rect.width);
+      const percent = (x / rect.width) * 100;
+      setSlider(percent);
+    });
+
+    // Initialize
+    setSlider(0);
+  </script>
+</body>
+</html>
